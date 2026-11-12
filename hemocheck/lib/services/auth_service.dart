@@ -90,7 +90,7 @@ class AuthService {
         });
         return false;
       });
-    } catch (e) {
+    } catch (_) {
       await cred.user?.delete(); // deshace la cuenta si algo falló
       throw AuthException('No se pudo guardar el registro.');
     }
