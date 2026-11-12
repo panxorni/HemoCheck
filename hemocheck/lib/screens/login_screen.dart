@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hemocheck/services/auth_service.dart';
 import 'package:hemocheck/utils/validators.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -8,16 +9,27 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  
-  // Variables para guardar las credenciales 
+
+  // Variables para guardar las credenciales
   String _email = '';
   String _password = '';
+  bool _cargando = false;
 
-  void _submitLogin() {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      // Si el formato es válido, aquí se llamaría al servicio de autenticación
-      print("Inicio de sesión solicitado para: $_email");
+  Future<void> _submitLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
+    setState(() => _cargando = true);
+    try {
+      await AuthService().iniciarSesion(_email, _password);
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(
+          context, '/dashboard-donante', (r) => false);
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.mensaje)));
+    } finally {
+      if (mounted) setState(() => _cargando = false);
     }
   }
 
@@ -39,33 +51,40 @@ class _LoginScreenState extends State<LoginScreen> {
                     labelText: 'Correo Electrónico',
                     hintText: 'ejemplo@correo.cl',
                     border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email), // Icono visual de apoyo
+                    prefixIcon: Icon(Icons.email),
                   ),
                   keyboardType: TextInputType.emailAddress,
-                  validator: Validators.validateEmail, // Reutiliza el validador ya testeado
+                  validator: Validators.validateEmail,
                   onSaved: (value) => _email = value!,
                 ),
                 SizedBox(height: 16),
-                
                 TextFormField(
                   decoration: InputDecoration(
                     labelText: 'Contraseña',
                     hintText: 'Ingresa tu contraseña',
                     border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock), // Icono visual de apoyo
+                    prefixIcon: Icon(Icons.lock),
                   ),
-                  obscureText: true, // Oculta el texto por seguridad
-                  validator: Validators.validatePassword, // Asegura que cumpla los criterios mínimos
+                  obscureText: true,
+                  validator: Validators.validatePassword,
                   onSaved: (value) => _password = value!,
                 ),
                 SizedBox(height: 30),
-                
                 ElevatedButton(
-                  onPressed: _submitLogin,
+                  onPressed: _cargando ? null : _submitLogin,
                   style: ElevatedButton.styleFrom(
                     minimumSize: Size(double.infinity, 50),
                   ),
-                  child: Text('Ingresar'),
+                  child: _cargando
+                      ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : Text('Ingresar'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pushNamed(context, '/registro'),
+                  child: Text('¿No tienes cuenta? Regístrate'),
                 ),
               ],
             ),

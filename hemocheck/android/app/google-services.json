@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "978552745744",
+    "project_id": "hemocheck-grupo12",
+    "storage_bucket": "hemocheck-grupo12.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:978552745744:android:38da68a6af2f255c22ff95",
+        "android_client_info": {
+          "package_name": "com.example.hemocheck"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAIJUGs8cFoiXdDwShJkjJlomS8LZCkGwQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
