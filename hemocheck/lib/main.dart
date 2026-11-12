@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
+import 'screens/dashboard_donante_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,11 +19,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'HemoCheck',
       theme: ThemeData(colorSchemeSeed: Colors.red, useMaterial3: true),
-      home: const Scaffold(
-        body: Center(child: Text('HemoCheck')),
-      ),
+      initialRoute: '/login',
+      routes: {
+        '/login': (_) => LoginScreen(),
+        '/registro': (_) => RegisterScreen(),
+        '/dashboard-donante': (_) => const DashboardDonanteScreen(),
+      },
     );
   }
 }
