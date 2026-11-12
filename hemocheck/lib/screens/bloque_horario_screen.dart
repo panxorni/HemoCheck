@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:hemocheck/utils/bloque_horario_validators.dart';
 import 'package:http/http.dart' as http;
+
 //Nota si ven incompatibilidades, colocar "flutter pub add http" desde la terminal apuntando a la carpeta "hemocheck" CON LA MINUSCULA,YA QUE NO DEBE INVOLUCRAR AL BACK END
 class BloqueHorarioScreen extends StatefulWidget {
   const BloqueHorarioScreen({super.key});
@@ -35,7 +36,6 @@ class _BloqueHorarioScreenState extends State<BloqueHorarioScreen> {
   String _formatHora(TimeOfDay t) => '${_dos(t.hour)}:${_dos(t.minute)}';
 
   Future<void> _elegirFecha() async {
-
     final hoy = DateTime.now();
     final hoySinHora = DateTime(hoy.year, hoy.month, hoy.day);
     final elegida = await showDatePicker(
@@ -47,12 +47,19 @@ class _BloqueHorarioScreenState extends State<BloqueHorarioScreen> {
     if (elegida == null) return;
     setState(() {
       _fecha = elegida;
-      _fechaCtrl.text = '${_dos(elegida.day)}-${_dos(elegida.month)}-${elegida.year}';
+      _fechaCtrl.text =
+          '${_dos(elegida.day)}-${_dos(elegida.month)}-${elegida.year}';
     });
   }
 
-  Future<void> _elegirHora(TextEditingController ctrl, TimeOfDay inicial) async {
-    final elegida = await showTimePicker(context: context, initialTime: inicial);
+  Future<void> _elegirHora(
+    TextEditingController ctrl,
+    TimeOfDay inicial,
+  ) async {
+    final elegida = await showTimePicker(
+      context: context,
+      initialTime: inicial,
+    );
     if (elegida == null) return;
     setState(() => ctrl.text = _formatHora(elegida));
   }
@@ -60,19 +67,23 @@ class _BloqueHorarioScreenState extends State<BloqueHorarioScreen> {
   void _mensaje(String texto, {bool error = false}) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(texto),
-        backgroundColor: error ? Theme.of(context).colorScheme.error : null,
-      ));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(texto),
+          backgroundColor: error ? Theme.of(context).colorScheme.error : null,
+        ),
+      );
   }
-
 
   Future<void> _enviarAlServicio(Map<String, dynamic> payload) async {
     ///en caso de hacer build de movil cambiar el parse por "http://10.0.2.2:8080/sedes/123/horarios"
     final url = Uri.parse("http://localhost:8080/sedes/123/horarios");
     final response = await http.post(
       url,
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+      },
+
       body: jsonEncode(payload),
     );
 
@@ -84,12 +95,12 @@ class _BloqueHorarioScreenState extends State<BloqueHorarioScreen> {
   Future<void> _guardar() async {
     if (!_formKey.currentState!.validate()) {
       _mensaje('Revisa los campos marcados', error: true);
-      return; 
+      return;
     }
 
     final f = _fecha!;
     final payload = {
-      'fecha': '${f.year}-${_dos(f.month)}-${_dos(f.day)}', 
+      'fecha': '${f.year}-${_dos(f.month)}-${_dos(f.day)}',
       'horaInicio': _inicioCtrl.text,
       'horaFin': _finCtrl.text,
       'capacidadMaxima': int.parse(_capacidadCtrl.text.trim()),
@@ -143,7 +154,9 @@ class _BloqueHorarioScreenState extends State<BloqueHorarioScreen> {
                   onTap: _cargando
                       ? null
                       : () => _elegirHora(
-                          _inicioCtrl, const TimeOfDay(hour: 9, minute: 0)),
+                          _inicioCtrl,
+                          const TimeOfDay(hour: 9, minute: 0),
+                        ),
                   decoration: const InputDecoration(
                     labelText: 'Hora de inicio',
                     border: OutlineInputBorder(),
@@ -158,14 +171,18 @@ class _BloqueHorarioScreenState extends State<BloqueHorarioScreen> {
                   onTap: _cargando
                       ? null
                       : () => _elegirHora(
-                          _finCtrl, const TimeOfDay(hour: 10, minute: 0)),
+                          _finCtrl,
+                          const TimeOfDay(hour: 10, minute: 0),
+                        ),
                   decoration: const InputDecoration(
                     labelText: 'Hora de fin',
                     border: OutlineInputBorder(),
                     suffixIcon: Icon(Icons.access_time_filled),
                   ),
-                  validator: (v) =>
-                      BloqueHorarioValidators.validateHoraFin(_inicioCtrl.text, v),
+                  validator: (v) => BloqueHorarioValidators.validateHoraFin(
+                    _inicioCtrl.text,
+                    v,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
