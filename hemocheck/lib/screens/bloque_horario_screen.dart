@@ -66,9 +66,10 @@ class _BloqueHorarioScreenState extends State<BloqueHorarioScreen> {
       ));
   }
 
-//kmdwkdk
+
   Future<void> _enviarAlServicio(Map<String, dynamic> payload) async {
-    final url = Uri.parse('http://localhost:8080/sedes/123/horarios');
+    ///en caso de hacer build de movil cambiar el parse por "http://10.0.2.2:8080/sedes/123/horarios"
+    final url = Uri.parse("http://localhost:8080/sedes/123/horarios");
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -89,9 +90,9 @@ class _BloqueHorarioScreenState extends State<BloqueHorarioScreen> {
     final f = _fecha!;
     final payload = {
       'fecha': '${f.year}-${_dos(f.month)}-${_dos(f.day)}', 
-      'hora_inicio': _inicioCtrl.text, 
-      'hora_fin': _finCtrl.text, 
-      'capacidad_maxima': int.parse(_capacidadCtrl.text.trim()),
+      'horaInicio': _inicioCtrl.text,
+      'horaFin': _finCtrl.text,
+      'capacidadMaxima': int.parse(_capacidadCtrl.text.trim()),
     };
 
     setState(() => _cargando = true);

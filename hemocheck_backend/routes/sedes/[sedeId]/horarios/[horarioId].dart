@@ -29,7 +29,7 @@ Future<Response> onRequest(RequestContext context, String sedeId, String horario
       horaInicio: (body['horaInicio'] as String?) ?? bloqueAntiguo.horaInicio,
       horaFin: (body['horaFin'] as String?) ?? bloqueAntiguo.horaFin,
       capacidadMaxima: (body['capacidadMaxima'] as int?) ?? bloqueAntiguo.capacidadMaxima,
-      reservasActuales: bloqueAntiguo.reservasActuales,
+      reservasActuales: (body["reservasActuales"] as int?) ?? bloqueAntiguo.reservasActuales,
     );
 
     // Se reemplaza el registro viejo por el nuevo en la lista
