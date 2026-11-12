@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:hemocheck/screens/dashboard_donante_screen.dart';
 import 'package:hemocheck/services/auth_service.dart';
 import 'package:hemocheck/utils/validators.dart';
+
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -91,6 +93,18 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+        //ESTO ES UN BOTON PROVISIONAL PARA NAVEGAR MEJOR ENTRE LAS PANTALLAS, SE VA A REMOVER EN EL PRODUCTO FINAL
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: Colors.orange, // Naranja para recordar que es provisional
+          tooltip: 'Acceder Donante (Provisional)',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const DashboardDonanteScreen()),
+            );
+          },
+          child: const Icon(Icons.add),
+        )
     );
   }
 }
