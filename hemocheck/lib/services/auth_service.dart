@@ -9,14 +9,31 @@ class AuthException implements Exception {
 }
 
 class AuthService {
-  final _auth = FirebaseAuth.instance;
-  final _db = FirebaseFirestore.instance;
+  static const int edadMinima = 17;
+  static const int edadMaxima = 70;
 
-  // 12.345.678-9 y 123456789 quedan ambos como 12345678-9
+  final FirebaseAuth _auth;
+  final FirebaseFirestore _db;
+
+  // Sin argumentos usa Firebase real; los tests pasan versiones simuladas.
+  AuthService({FirebaseAuth? auth, FirebaseFirestore? db})
+      : _auth = auth ?? FirebaseAuth.instance,
+        _db = db ?? FirebaseFirestore.instance;
+
+  // 12.345.678-5 y 123456785 quedan ambos como 12345678-5
   String normalizarRut(String rut) {
     final limpio = rut.replaceAll(RegExp(r'[^0-9kK]'), '').toUpperCase();
     if (limpio.length < 2) return limpio;
     return '${limpio.substring(0, limpio.length - 1)}-${limpio.substring(limpio.length - 1)}';
+  }
+
+  int _calcularEdad(DateTime nacimiento) {
+    final hoy = DateTime.now();
+    int edad = hoy.year - nacimiento.year;
+    if (hoy.isBefore(DateTime(hoy.year, nacimiento.month, nacimiento.day))) {
+      edad--;
+    }
+    return edad;
   }
 
   Future<void> registrar({
@@ -28,6 +45,12 @@ class AuthService {
     required String contrasena,
   }) async {
     final rutId = normalizarRut(rut);
+
+    final edad = _calcularEdad(fechaNacimiento);
+    if (edad < edadMinima || edad > edadMaxima) {
+      throw AuthException(
+          'La fecha de nacimiento está fuera del rango permitido ($edadMinima a $edadMaxima años).');
+    }
 
     // 1. Crea la cuenta. Firebase rechaza correos repetidos.
     UserCredential cred;
