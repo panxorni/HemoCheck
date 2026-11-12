@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:hemocheck/utils/bloque_horario_validators.dart';
-
+import 'package:http/http.dart' as http;
+//Nota si ven incompatibilidades, colocar "flutter pub add http" desde la terminal apuntando a la carpeta "hemocheck" CON LA MINUSCULA,YA QUE NO DEBE INVOLUCRAR AL BACK END
 class BloqueHorarioScreen extends StatefulWidget {
   const BloqueHorarioScreen({super.key});
 
@@ -65,7 +68,16 @@ class _BloqueHorarioScreenState extends State<BloqueHorarioScreen> {
 
 //kmdwkdk
   Future<void> _enviarAlServicio(Map<String, dynamic> payload) async {
-    print('Bloque horario a enviar: $payload');
+    final url = Uri.parse('http://localhost:8080/sedes/123/horarios');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Error del servidor: ${response.statusCode}');
+    }
   }
 
   Future<void> _guardar() async {

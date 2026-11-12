@@ -25,7 +25,7 @@ Future<Response> onRequest(RequestContext context, String sedeId, String horario
     final bloqueActualizado = BloqueHorario(
       id: bloqueAntiguo.id,
       sedeId: bloqueAntiguo.sedeId,
-      diaSemana: (body['diaSemana'] as int?) ?? bloqueAntiguo.diaSemana,
+      fecha: (body['fecha'] as String?) ?? bloqueAntiguo.fecha,
       horaInicio: (body['horaInicio'] as String?) ?? bloqueAntiguo.horaInicio,
       horaFin: (body['horaFin'] as String?) ?? bloqueAntiguo.horaFin,
       capacidadMaxima: (body['capacidadMaxima'] as int?) ?? bloqueAntiguo.capacidadMaxima,

@@ -2,7 +2,7 @@ class BloqueHorario {
   const BloqueHorario({
     required this.id,
     required this.sedeId,
-    required this.diaSemana,
+    required this.fecha,
     required this.horaInicio,
     required this.horaFin,
     required this.capacidadMaxima,
@@ -11,7 +11,7 @@ class BloqueHorario {
 
   final String id;
   final String sedeId;
-  final int diaSemana;
+  final String fecha;
   final String horaInicio;
   final String horaFin;
   final int capacidadMaxima;
@@ -23,7 +23,7 @@ class BloqueHorario {
     return BloqueHorario(
       id: json['id'] as String,
       sedeId: json['sedeId'] as String,
-      diaSemana: json['diaSemana'] as int,
+      fecha: json['fecha'] as String,
       horaInicio: json['horaInicio'] as String,
       horaFin: json['horaFin'] as String,
       capacidadMaxima: json['capacidadMaxima'] as int,
@@ -34,11 +34,10 @@ class BloqueHorario {
   Map<String, dynamic> toJson() => {
     'id': id,
     'sedeId': sedeId,
-    'diaSemana': diaSemana,
+    'fecha': fecha,
     'horaInicio': horaInicio,
     'horaFin': horaFin,
     'capacidadMaxima': capacidadMaxima,
     'reservasActuales': reservasActuales,
   };
 }
-//Nota: hay una carpeta llamada route con las sedes y una sede simulada llamada 123 que seria el id de esa sede
