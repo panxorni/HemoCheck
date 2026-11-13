@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:hemocheck/screens/bloque_horario_screen.dart';
 import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
@@ -22,12 +23,15 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'HemoCheck',
       theme: ThemeData(colorSchemeSeed: Colors.red, useMaterial3: true),
-      initialRoute: '/login',
+      //Cambie el initial route provisionalmente para ver las otras pantallas
+      initialRoute: "/login",
       routes: {
         '/login': (_) => LoginScreen(),
         '/registro': (_) => RegisterScreen(),
         '/dashboard-donante': (_) => const DashboardDonanteScreen(),
+        "/bloque-horario": (_) => BloqueHorarioScreen(),
       },
+
     );
   }
 }
