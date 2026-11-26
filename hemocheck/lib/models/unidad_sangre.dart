@@ -81,6 +81,34 @@ class UnidadSangre {
     );
   }
 
+  /// Indica si la unidad superó su fecha de vencimiento (RF-22).
+  ///
+  /// Compara [hoy] (o la fecha actual si no se indica) con [fechaVencimiento].
+  /// Retorna `true` solo si la fecha de referencia es posterior al vencimiento.
+  bool estaVencida({DateTime? hoy}) {
+    final ref = hoy ?? DateTime.now();
+    return ref.isAfter(fechaVencimiento);
+  }
+
+  /// Indica si la unidad puede despacharse: su estado es [EstadoUnidad.disponible]
+  /// y además no ha vencido según [estaVencida].
+  bool estaDisponible({DateTime? hoy}) {
+    return estado == EstadoUnidad.disponible && !estaVencida(hoy: hoy);
+  }
+
+  /// Devuelve una copia de esta unidad con [nuevoEstado], sin mutar la original.
+  UnidadSangre copiarConEstado(EstadoUnidad nuevoEstado) {
+    return UnidadSangre(
+      codigoBolsa: codigoBolsa,
+      donacionId: donacionId,
+      sedeId: sedeId,
+      tipoSangre: tipoSangre,
+      fechaExtraccion: fechaExtraccion,
+      fechaVencimiento: fechaVencimiento,
+      estado: nuevoEstado,
+    );
+  }
+
   /// Crea una instancia de [UnidadSangre] a partir de un mapa decodificado desde JSON.
   ///
   /// Espera fechas en formato ISO-8601 y los nombres literales de [TipoSangre]
