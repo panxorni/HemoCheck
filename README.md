@@ -13,7 +13,3 @@ Faltaria hacer que el programa detecte mediante el inicio de sesion si el usuari
 
 **IMPORTANTE** 
 Hay botones naranja "+" para moverse entre las pantallas hechas, estos botones no estaran en la version final.
-
-**Antes de ejecutar**:
-
-Abrir una terminal apuntando a la carpeta hemocheck_backend y ejecutar el comando "dart_frog dev"

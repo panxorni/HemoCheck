@@ -7,6 +7,8 @@ class BloqueHorario {
     required this.horaFin,
     required this.capacidadMaxima,
     this.reservasActuales = 0,
+    this.inscritos = const [],
+    this.cerrado = false,
   });
 
   final String id;
@@ -16,6 +18,8 @@ class BloqueHorario {
   final String horaFin;
   final int capacidadMaxima;
   final int reservasActuales;
+  final List<String> inscritos;
+  final bool cerrado;
 
   bool get tieneCapacidad => reservasActuales < capacidadMaxima;
 
@@ -28,6 +32,11 @@ class BloqueHorario {
       horaFin: json['horaFin'] as String,
       capacidadMaxima: json['capacidadMaxima'] as int,
       reservasActuales: json['reservasActuales'] as int? ?? 0,
+      inscritos: (json['inscritos'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList() ??
+          [],
+      cerrado: json['cerrado'] as bool? ?? false,
     );
   }
 
@@ -39,5 +48,7 @@ class BloqueHorario {
     'horaFin': horaFin,
     'capacidadMaxima': capacidadMaxima,
     'reservasActuales': reservasActuales,
+    'inscritos': inscritos,
+    'cerrado': cerrado,
   };
 }
