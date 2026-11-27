@@ -5,6 +5,7 @@ import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/dashboard_donante_screen.dart';
+import 'screens/evaluacion_clinica_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +31,7 @@ class MyApp extends StatelessWidget {
         '/registro': (_) => RegisterScreen(),
         '/dashboard-donante': (_) => const DashboardDonanteScreen(),
         "/bloque-horario": (_) => BloqueHorarioScreen(),
+        '/evaluacion-clinica': (_) => const EvaluacionClinicaScreen(),
       },
 
     );

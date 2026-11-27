@@ -7,6 +7,7 @@ import 'package:hemocheck/services/auth_service.dart';
 import 'package:hemocheck/services/citas_service.dart';
 
 import 'bloque_horario_screen.dart';
+import 'evaluacion_clinica_screen.dart';
 
 class DashboardDonanteScreen extends StatefulWidget {
   const DashboardDonanteScreen({super.key});
@@ -280,12 +281,28 @@ class _DashboardDonanteScreenState extends State<DashboardDonanteScreen> {
         ],
       ),
       floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           FloatingActionButton(
             heroTag: 'recargarBtn',
             onPressed: _recargar,
             child: const Icon(Icons.refresh),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            heroTag: 'evaluacionLoginBtn',
+            backgroundColor: Colors.orange,
+            tooltip: 'Evaluación clínica (PROVISIONAL)',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EvaluacionClinicaScreen(),
+                ),
+              );
+            },
+            child: const Icon(Icons.medical_services),
           ),
           const SizedBox(height: 16),
           FloatingActionButton(
@@ -299,9 +316,6 @@ class _DashboardDonanteScreenState extends State<DashboardDonanteScreen> {
                   builder: (context) => const BloqueHorarioScreen(),
                 ),
               );
-              // Recarga automáticamente al volver de crear un bloque
-              if (!mounted) return;
-              _recargar();
             },
             child: const Icon(Icons.add),
           ),
