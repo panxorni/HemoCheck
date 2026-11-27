@@ -1,6 +1,6 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:hemocheck/models/bloque_horario.dart';
 import 'package:hemocheck/utils/bloque_horario_validators.dart';
@@ -30,13 +30,6 @@ class _BloqueHorarioScreenState extends State<BloqueHorarioScreen> {
   List<BloqueHorario> _bloques = [];
   bool _cargandoLista = false;
 
-  String get _urlBase {
-    if (kIsWeb) return 'http://localhost:8080';
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8080';
-    }
-    return 'http://localhost:8080';
-  }
 
   @override
   void dispose() {
