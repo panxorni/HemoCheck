@@ -1,9 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hemocheck/models/bloque_horario.dart';
 import 'package:hemocheck/services/auth_service.dart';
-
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 import 'bloque_horario_screen.dart';
 
@@ -15,28 +14,32 @@ class DashboardDonanteScreen extends StatefulWidget {
 }
 
 class _DashboardDonanteScreenState extends State<DashboardDonanteScreen> {
-  final String sedeId= "123";
+  final String sedeId = "123";
   late Future<List<BloqueHorario>> _horariosFuture;
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
     _horariosFuture = _obtenerHorarios(sedeId);
   }
-  Future<List<BloqueHorario>> _obtenerHorarios(String id) async{
-///en caso de hacer build de movil cambiar el parse por "http://10.0.2.2:8080/sedes/$id/horario"
-    final url = Uri.parse('http://localhost:8080/sedes/$id/horarios');
-    final response = await http.get(url);
 
-    if (response.statusCode == 200) {
-      final List<dynamic> datos = jsonDecode(response.body);
-      return datos.map((json) => BloqueHorario.fromJson(json)).toList();
-    } else {
-      throw Exception('Error al cargar horarios: ${response.statusCode}');
-    }
+  // Leer horarios directamente desde Cloud Firestore
+  Future<List<BloqueHorario>> _obtenerHorarios(String id) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('sedes')
+        .doc(id)
+        .collection('horarios')
+        .get();
+
+    return snapshot.docs.map((doc) {
+      final datos = doc.data();
+      datos['id'] = doc.id; // Asigna el ID automático de Firestore
+      return BloqueHorario.fromJson(datos);
+    }).toList();
   }
+
+  //Reservar cupo actualizando el documento en Cloud Firestore
   Future<void> _reservarCupo(BloqueHorario bloque) async {
-    //valida si hay cupos
     if (bloque.reservasActuales >= bloque.capacidadMaxima) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Este bloque ya está lleno')),
@@ -44,50 +47,140 @@ class _DashboardDonanteScreenState extends State<DashboardDonanteScreen> {
       return;
     }
 
-    //Apunta a la ruta PUT específica del bloque
-    //en caso de hacer build de MOVIL cambiar el parse por "http://10.0.2.2:8080/sedes/$sedeId/horarios/${bloque.id}"
-    final url = Uri.parse('http://localhost:8080/sedes/$sedeId/horarios/${bloque.id}');
+    // Obtiene el correo/nombre del usuario logueado o usa uno genérico si no hay sesión
+    final usuario = FirebaseAuth.instance.currentUser;
+    final identificadorDonante =
+        usuario?.displayName ?? usuario?.email ?? 'Donante Anónimo';
 
-    try {
-      final response = await http.put(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          // Sumamos 1 a las reservas actuales
-          'reservasActuales': bloque.reservasActuales + 1,
-        }),
+    if (bloque.inscritos.contains(identificadorDonante)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ya tienes una reserva en este bloque')),
       );
+      return;
+    }
+    try {
+      final docRef = FirebaseFirestore.instance
+          .collection('sedes')
+          .doc(sedeId)
+          .collection('horarios')
+          .doc(bloque.id);
 
-      if (response.statusCode == 200) {
-        // Si tuvo éxito, recarga la lista visualmente
-        setState(() {
-          _horariosFuture = _obtenerHorarios(sedeId);
-        });
+      await docRef.update({
+        'reservasActuales': FieldValue.increment(1),
+        'inscritos': FieldValue.arrayUnion([identificadorDonante]),
+      });
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('¡Reserva confirmada con éxito!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } else {
-        throw Exception('Error al actualizar en el servidor');
+      // Recarga la lista visualmente con tu _horariosFuture
+      setState(() {
+        _horariosFuture = _obtenerHorarios(sedeId);
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('¡Reserva confirmada con éxito!'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error al reservar: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
+  Future<void> _cancelarCupo(BloqueHorario bloque) async {
+    final usuario = FirebaseAuth.instance.currentUser;
+    final identificadorDonante =
+        usuario?.displayName ?? usuario?.email ?? 'Donante Anónimo';
 
+    try {
+      final docRef = FirebaseFirestore.instance
+          .collection('sedes')
+          .doc(sedeId)
+          .collection('horarios')
+          .doc(bloque.id);
+
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists) throw Exception('El bloque ya no existe.');
+
+        final datos = snapshot.data()!;
+        if (datos['cerrado'] == true) {
+          throw Exception('Este bloque horario fue cerrado por la sede.');
+        }
+        final inscritosActuales = List<String>.from(datos['inscritos'] ?? []);
+        final reservasActuales = datos['reservasActuales'] as int? ?? 0;
+
+        if (!inscritosActuales.contains(identificadorDonante)) {
+          throw Exception('No tienes una reserva activa en este bloque.');
+        }
+
+        transaction.update(docRef, {
+          'reservasActuales': reservasActuales > 0 ? reservasActuales - 1 : 0,
+          'inscritos': FieldValue.arrayRemove([identificadorDonante]),
+        });
+      });
+
+      setState(() {
+        _horariosFuture = _obtenerHorarios(sedeId);
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Reserva cancelada. El cupo ha sido liberado.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  Future<bool> _confirmarAccion({
+    required String titulo,
+    required String mensaje,
+    required String textoConfirmar,
+    Color colorConfirmar = Colors.red,
+  }) async {
+    final resultado = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(titulo),
+        content: Text(mensaje),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorConfirmar,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(textoConfirmar),
+          ),
+        ],
+      ),
+    );
+    return resultado ?? false;
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('HemoCheck - Donante'),
         actions: [
           IconButton(
@@ -104,41 +197,66 @@ class _DashboardDonanteScreenState extends State<DashboardDonanteScreen> {
       ),
       body: FutureBuilder<List<BloqueHorario>>(
         future: _horariosFuture,
-        builder: (context, snapshot){
-          if ( snapshot.connectionState== ConnectionState.waiting){
-            return Center(child: Text("Error: ${snapshot.error}", style: const TextStyle(color: Colors.red),));
+        builder: (context, snapshot) {
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                "Error: ${snapshot.error}",
+                style: const TextStyle(color: Colors.red),
+              ),
+            );
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(
+              child: Text("No hay horarios de donación disponibles."),
+            );
           }
-          else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("No hay horarios de donación disponibles."));
-          }
+          final usuario = FirebaseAuth.instance.currentUser;
+          final identificadorDonante =
+              usuario?.displayName ?? usuario?.email ?? 'Donante Anónimo';
           final bloques = snapshot.data!;
           return ListView.builder(
             itemCount: bloques.length,
-            itemBuilder: (context, index){
+            itemBuilder: (context, index) {
               final bloque = bloques[index];
+              final lleno = bloque.reservasActuales >= bloque.capacidadMaxima;
+              final yaInscrito = bloque.inscritos.contains(identificadorDonante);
+              final cerrado = bloque.cerrado;
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListTile(
-                  leading:const CircleAvatar(
+                  leading: const CircleAvatar(
                     backgroundColor: Colors.redAccent,
-                    child:  Icon(Icons.bloodtype_outlined , color: Colors.white),
+                    child: Icon(Icons.bloodtype_outlined, color: Colors.white),
                   ),
                   title: Text(
                     "${bloque.fecha} | ${bloque.horaInicio} - ${bloque.horaFin}",
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text("Cupos: ${bloque.capacidadMaxima - bloque.reservasActuales} disponibles"),
+                  subtitle: Text(
+                    "Cupos: ${bloque.capacidadMaxima - bloque.reservasActuales} disponibles",
+                  ),
                   trailing: ElevatedButton(
-                    onPressed: (bloque.reservasActuales >= bloque.capacidadMaxima)
-                      ? null
-                      : () => _reservarCupo(bloque),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: Text(
-                    (bloque.reservasActuales >= bloque.capacidadMaxima) ? "Lleno" : "Reservar",
-                  ),
+                    onPressed: cerrado
+                        ? null
+                        : (yaInscrito
+                        ? () => _cancelarCupo(bloque)
+                        : (lleno ? null : () => _reservarCupo(bloque))),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: cerrado
+                          ? Colors.grey
+                          : (yaInscrito ? Colors.grey.shade700 : Colors.red),
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text(
+                      cerrado
+                          ? "Cerrado"
+                          : (yaInscrito
+                          ? "Cancelar"
+                          : (lleno ? "Lleno" : "Reservar")),
+                    ),
                   ),
                 ),
               );
@@ -146,13 +264,11 @@ class _DashboardDonanteScreenState extends State<DashboardDonanteScreen> {
           );
         },
       ),
-
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          //Botón para recargar la lista
           FloatingActionButton(
-            heroTag: 'recargarBtn', // Necesario cuando hay dos botones flotantes
+            heroTag: 'recargarBtn',
             onPressed: () {
               setState(() {
                 _horariosFuture = _obtenerHorarios(sedeId);
@@ -160,26 +276,27 @@ class _DashboardDonanteScreenState extends State<DashboardDonanteScreen> {
             },
             child: const Icon(Icons.refresh),
           ),
-          const SizedBox(height: 16), // Espacio entre los botones
-
-          //BOTON PROVISIONAL, ESTO ESTA AQUI SOLO PARA NAVEGAR ENTRE PANTALLAS Y HACER PRUEBAS
+          const SizedBox(height: 16),
           FloatingActionButton(
             heroTag: 'crearBtn',
             backgroundColor: Colors.orange,
             tooltip: 'Crear nuevo bloque (PROVISIONAL)',
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const BloqueHorarioScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const BloqueHorarioScreen(),
+                ),
               );
+              // Recarga automáticamente al volver de crear un bloque
+              setState(() {
+                _horariosFuture = _obtenerHorarios(sedeId);
+              });
             },
             child: const Icon(Icons.add),
           ),
         ],
       ),
     );
-
   }
 }
-
-
