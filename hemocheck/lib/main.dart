@@ -5,6 +5,8 @@ import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/dashboard_donante_screen.dart';
+import 'screens/evaluacion_clinica_screen.dart';
+import 'screens/registrar_donacion_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,8 +32,19 @@ class MyApp extends StatelessWidget {
         '/registro': (_) => RegisterScreen(),
         '/dashboard-donante': (_) => const DashboardDonanteScreen(),
         "/bloque-horario": (_) => BloqueHorarioScreen(),
+        '/evaluacion-clinica': (_) => const EvaluacionClinicaScreen(),
+        '/registrar-donacion': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments
+              as RegistrarDonacionArgs;
+          return RegistrarDonacionScreen(
+            evaluacion: args.evaluacion,
+            donanteRut: args.donanteRut,
+            tipoSangre: args.tipoSangre,
+            sedeId: args.sedeId,
+            profesionalId: args.profesionalId,
+          );
+        },
       },
-
     );
   }
 }
