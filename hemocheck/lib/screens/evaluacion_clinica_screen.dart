@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hemocheck/models/cita.dart';
 import 'package:hemocheck/models/evaluacion.dart';
+import 'package:hemocheck/screens/registrar_donacion_screen.dart'; // H5.3
 import 'package:hemocheck/services/auth_service.dart';
 import 'package:hemocheck/services/evaluacion_service.dart';
 import 'package:hemocheck/utils/evaluacion_validators.dart';
@@ -267,6 +268,43 @@ class _EvaluacionClinicaScreenState extends State<EvaluacionClinicaScreen> {
     });
   }
 
+  // H5.3: tras una evaluación "apto", ofrece pasar al registro de la donación.
+  Future<void> _ofrecerRegistrarDonacion(Evaluacion evaluacion) async {
+    if (!mounted) return;
+    final registrar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Donante apto'),
+        content: const Text(
+          'La evaluación quedó registrada. ¿Quieres registrar la donación ahora?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Más tarde'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Registrar donación'),
+          ),
+        ],
+      ),
+    );
+    if (registrar != true || !mounted) return;
+
+    await Navigator.pushNamed(
+      context,
+      '/registrar-donacion',
+      arguments: RegistrarDonacionArgs(
+        evaluacion: evaluacion,
+        donanteRut: evaluacion.donanteRut,
+        tipoSangre: _tipoSangre,
+        sedeId: _citaActual?.sedeId ?? '',
+        profesionalId: evaluacion.profesionalId,
+      ),
+    );
+  }
+
   Future<void> _guardarEvaluacion() async {
     final valido = _formKey.currentState!.validate();
     if (!valido) {
@@ -311,7 +349,7 @@ class _EvaluacionClinicaScreenState extends State<EvaluacionClinicaScreen> {
 
     setState(() => _guardando = true);
     try {
-      await _evaluacionService.registrarEvaluacion(
+      final evaluacion = await _evaluacionService.registrarEvaluacion(
         cita: _citaActual!,
         fechaNacimientoDonante: _fechaNacimientoDonante!,
         pesoKg: peso,
@@ -323,6 +361,12 @@ class _EvaluacionClinicaScreenState extends State<EvaluacionClinicaScreen> {
       );
 
       _mostrarSnack('Evaluación registrada correctamente.');
+
+      // H5.3: si el donante quedó apto, se ofrece registrar la donación.
+      if (evaluacion.resultado == ResultadoEvaluacion.apto) {
+        if (mounted) setState(() => _guardando = false);
+        await _ofrecerRegistrarDonacion(evaluacion);
+      }
     } on EvaluacionException catch (e) {
       _mostrarSnack(e.message, error: true);
     } catch (e) {
